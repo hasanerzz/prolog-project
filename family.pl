@@ -4,6 +4,7 @@
 male('Murat Aslan').
 female('Sedanur Aslan').
 
+
 % Define initial marriage relationships
 married('Murat Aslan', 'Sedanur Aslan').
 
@@ -27,72 +28,78 @@ update_gender(Name, female) :-
 
 % Printing the family tree
 print_family_tree :-
-    find_root_members(RootMembers),
     writeln('---LEVEL 0---'),
-    print_individuals_with_spouses(RootMembers),
-    print_next_levels(RootMembers, 1).
+    print_individual_with_spouse('Murat Aslan'),
+    find_children(['Murat Aslan', 'Sedanur Aslan'], Level1Members),
+    print_next_levels(Level1Members, 1).
 
-find_root_members(RootMembers) :-
-    findall(Person, (parent(Person, _), \+ parent(_, Person)), PotentialRoots),
-    list_to_set(PotentialRoots, RootMembers).
+find_children(Parents, Children) :-
+    findall(Child, (member(Parent, Parents), parent(Parent, Child)), ChildrenList),
+    list_to_set(ChildrenList, Children).
 
 print_next_levels([], _).
 print_next_levels(Individuals, Level) :-
-    findall(Child, (member(Person, Individuals), parent(Person, Child)), NextLevelIndividuals),
-    list_to_set(NextLevelIndividuals, UniqueNextLevelIndividuals),
-    UniqueNextLevelIndividuals \= [],  % Ensure there are next level individuals to print
+    Individuals \= [],
     format('---LEVEL ~w---~n', [Level]),
-    print_individuals_with_spouses(UniqueNextLevelIndividuals),
+    print_individuals_with_spouses(Individuals),
+    find_children(Individuals, NextLevelIndividuals),
     NextLevel is Level + 1,
-    print_next_levels(UniqueNextLevelIndividuals, NextLevel).
+    print_next_levels(NextLevelIndividuals, NextLevel).
 
 print_individuals_with_spouses([]).
 print_individuals_with_spouses([Individual | Rest]) :-
-    (   married(Individual, Spouse) ->
-        format('~w-~w~n', [Individual, Spouse]),
-        exclude(==(Spouse), Rest, NewRest)  % Remove the spouse from the rest of the list
-    ;   format('~w~n', [Individual]),
-        NewRest = Rest
-    ),
-    print_individuals_with_spouses(NewRest).
+    print_individual_with_spouse(Individual),
+    print_individuals_with_spouses(Rest).
+
+print_individual_with_spouse(Individual) :-
+    (married(Individual, Spouse) ->
+        format('~w-~w~n', [Individual, Spouse]);
+        format('~w~n', [Individual])).
 
 
-
-
-
-
-% Calculating age
+%Calculating age
 current_year(2024).  % This can be dynamically set based on the current year
 calculate_age(Name, Age) :-
     birth_year(Name, BirthYear),
     (   death_year(Name, DeathYear) -> Age is DeathYear - BirthYear
     ;   current_year(CurrentYear), Age is CurrentYear - BirthYear).
 
+
 print_person_info(Name) :-
     (male(Name) -> Gender = 'Male' ; female(Name) -> Gender = 'Female' ; Gender = 'Unknown'),
     format('Name: ~w, Gender: ~w~n', [Name, Gender]),
     findall(Child, parent(Name, Child), Children),
-    format('Children: ~w~n', [Children]),
+    (Children == [] -> ChildrenList = 'None' ; ChildrenList = Children),
+    format('Children: ~w~n', [ChildrenList]),
     findall(Parent, parent(Parent, Name), Parents),
-    format('Parents: ~w~n', [Parents]),
-    (married(Name, Spouse) -> format('Spouse: ~w~n', [Spouse]) ; true),
+    (Parents == [] -> ParentsList = 'None' ; ParentsList = Parents),
+    format('Parents: ~w~n', [ParentsList]),
+    (married(Name, Spouse) -> format('Spouse: ~w~n', [Spouse]) ; format('Spouse: None~n')),
     (   death_year(Name, DeathYear) ->
-        (   birth_year(Name, BirthYear) ->
-            Age is DeathYear - BirthYear,
-            format('Status: Dead~n'),
-            format('Birth Year: ~w~n', [BirthYear]),
-            format('Death Year: ~w~n', [DeathYear]),
-            format('Age at Death: ~w years~n', [Age])
+        (   DeathYear \= none ->
+            (   birth_year(Name, BirthYear) ->
+                Age is DeathYear - BirthYear,
+                format('Status: Dead~n'),
+                format('Birth Year: ~w~n', [BirthYear]),
+                format('Death Year: ~w~n', [DeathYear]),
+                format('Age at Death: ~w years~n', [Age])
+            ;   format('Status: Dead~n'),
+                format('Death Year: ~w~n', [DeathYear]),
+                writeln('Birth Year: Unknown, unable to calculate age')
+            )
         ;   format('Status: Dead~n'),
-            format('Death Year: ~w~n', [DeathYear]),
-            writeln('Birth Year: Unknown, unable to calculate age')
+            writeln('Death Year: Unknown'),
+            (   birth_year(Name, BirthYear) ->
+                writeln('Death Year is unknown, unable to calculate age')
+            ;   writeln('Birth Year: Unknown')
+            )
         )
     ;   (   birth_year(Name, BirthYear) ->
             current_year(CurrentYear),
             Age is CurrentYear - BirthYear,
             format('Status: Alive~n'),
             format('Birth Year: ~w~n', [BirthYear]),
-            format('Age: ~w~n', [Age])
+            format('Age: ~w years~n', [Age])
         ;   format('Status: Alive~n'),
             writeln('Birth Year: Unknown')
         )
@@ -100,24 +107,36 @@ print_person_info(Name) :-
 
 
 
+
+
+
+
 % Finding relationships
-find_relationship(X, Y, 'karde ') :- sibling(X, Y).
-find_relationship(X, Y, 'parent') :- parent(X, Y).
-find_relationship(X, Y, 'child') :- parent(Y, X).
-find_relationship(X, Y, 'grandparent') :- grandparent(X, Y).
-find_relationship(X, Y, 'grandchild') :- grandparent(Y, X).
-find_relationship(X, Y, 'amca') :- uncle(X, Y).
-find_relationship(X, Y, 'dayi') :- dayi(X, Y).
-find_relationship(X, Y, 'teyze') :- aunt(X, Y).
+find_relationship(X, Y, 'Kardes') :- sibling(X, Y).
+find_relationship(X, Y, 'Parent') :- parent(X, Y).
+find_relationship(X, Y, 'Cocuk') :- parent(Y, X).
+find_relationship(X, Y, 'Grandparent') :- grandparent(X, Y).
+find_relationship(X, Y, 'Torun') :- grandparent(Y, X).
+find_relationship(X, Y, 'Amca') :- uncle(X, Y).
+find_relationship(X, Y, 'Dayi') :- dayi(X, Y).
+find_relationship(X, Y, 'Teyze') :- aunt(X, Y).
 find_relationship(X, Y, 'hala') :- hala(X,Y).
-find_relationship(X, Y, 'cousin') :- cousin(X, Y).
-find_relationship(X, Y, 'spouse') :- married(X, Y).
-find_relationship(X, Y, 'baldiz') :- baldiz(X,Y).
-find_relationship(X, Y, 'kayinbirader') :- kayinbirader(X,Y).
-find_relationship(X, Y, 'elti') :- elti(X,Y).
-find_relationship(X, Y, 'bacanak') :- bacanak(X,Y).
-find_relationship(X, Y, 'ogul') :- ogul(X, Y).
-find_relationship(X, Y, 'kiz') :- kiz(X, Y).
+find_relationship(X, Y, 'Kuze') :- cousin(X, Y).
+find_relationship(X, Y, 'Es') :- married(X, Y).
+find_relationship(X, Y, 'Baldiz') :- baldiz(X,Y).
+find_relationship(X, Y, 'Kayinbirader') :- kayinbirader(X,Y).
+find_relationship(X, Y, 'Elti') :- elti(X,Y).
+find_relationship(X, Y, 'Bacanak') :- bacanak(X,Y).
+find_relationship(X, Y, 'Ogul') :- ogul(X, Y).
+find_relationship(X, Y, 'Kiz') :- kiz(X, Y).
+find_relationship(X, Y, 'Erkek Kardes') :-erkekKardes(X,Y).
+find_relationship(X, Y, 'Kiz Kardes') :- kizKardes(X, Y).
+find_relationship(X, Y, 'Abi') :- abi(X, Y).
+find_relationship(X, Y, 'Abla') :- abla(X, Y).
+find_relationship(X, Y, 'Gelin') :- gelin(X, Y).
+find_relationship(X, Y, 'Damat') :- damat(X, Y).
+find_relationship(X, Y, 'Kayinpeder') :- kayinpeder(X, Y).
+find_relationship(X, Y, 'Kayinvalide') :- kayinvalide(X, Y).
 
 
 
@@ -126,8 +145,13 @@ father(F, C) :- male(F), parent(F, C).
 mother(M, C) :- female(M), parent(M, C).
 ogul(O, P) :- male(O), parent(P,O).
 kiz(K, P) :- female(K), parent(P, K).
-%erkek kardes, kiz kardes, abla abi, gelin, damat
+gelin(G, K) :- female(G), ogul(O, K), married(G, O).
+damat(G, K) :- male(G), kiz(O, K), married(G, O).
 sibling(X, Y) :- parent(Z, X), parent(Z, Y), X \= Y.
+erkekKardes(K,B) :- male(K),sibling(K,B),(birth_year(K) < birth_year(B)).
+kizKardes(K,B) :- female(K),sibling(K,B),(birth_year(K) < birth_year(B)).
+abi(K,B) :- male(B), sibling(K,B), (birth_year(K) < birth_year(B)).
+abla(K,B) :- female(B), sibling(K,B), (birth_year(K) < birth_year(B)).
 grandparent(GP, GC) :- parent(GP, P), parent(P, GC).
 grandfather(GF, GC) :- male(GF), grandparent(GF, GC).
 grandmother(GM, GC) :- female(GM), grandparent(GM, GC).
@@ -143,6 +167,9 @@ elti(S,W) :- female(S), female(W), married(H,W), married(S,X),
 bacanak(S,W) :- male(S), male(W), married(H,W), married(S,X),
     sibling(X,H).
 eniste(E, H):- male(E), male(H), sibling(H,S), female(S), married(E,S).
+kayinpeder(K, E) :- gelin(E, K); damat(E, K), male(K).
+kayinvalide(K, E) :- gelin(E, K); damat(E, K), female(K).
+
 
 
 % Adding a marriage
@@ -213,9 +240,10 @@ add_person_prompt :-
     assert_parent(FatherName, ChildName),
     assert_parent(MotherName, ChildName),
     assert_birth_year(ChildName, BirthYear),
-    assert_death_year(ChildName, DeathYear),
+    (DeathYear \= none -> assert_death_year(ChildName, DeathYear) ; true),  % Check if death year is provided
     writeln('Person added successfully.'),
     print_family_tree.
+
 
 update_person :-
     writeln('Please type the name of the person to update:'),
@@ -244,7 +272,7 @@ update_death_year(Name) :-
     read(DeathYearInput),
     parse_death_year(DeathYearInput, NewDeathYear),
     retractall(death_year(Name, _)),
-    (NewDeathYear == none -> true ; assertz(death_year(Name, NewDeathYear))),
+    (NewDeathYear \= none -> assertz(death_year(Name, NewDeathYear) ; true),
     writeln('Death year updated successfully.'),
     print_person_info(Name).
 
@@ -254,14 +282,9 @@ update_death_year(Name) :-
 
 
 
-
-
-
-
-
-
 parse_death_year('none', none) :- !.
 parse_death_year(Year, Year).
+
 
 assert_person(Name, Gender) :-
     (   Gender == male ->
@@ -277,8 +300,6 @@ assert_parent(ParentName, ChildName) :-
 assert_birth_year(Name, Year) :-
     assertz(birth_year(Name, Year)).
 
-assert_death_year(Name, none) :-
-    !.
 assert_death_year(Name, Year) :-
     assertz(death_year(Name, Year)).
 
@@ -308,37 +329,58 @@ underage_marriage(Spouse1, Spouse2) :-
 
 prohibited_relationship(Spouse1, Spouse2) :-
     uncle(Spouse1, Spouse2),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    writeln('INVALID MARRIAGE : AMCA - YEGEN').
 prohibited_relationship(Spouse1, Spouse2) :-
     aunt(Spouse1, Spouse2),
-    write('INVALID MARRIAGE : TEYZE - YEGEN').
+    writeln('INVALID MARRIAGE : TEYZE - YEGEN').
 prohibited_relationship(Spouse1, Spouse2) :-
-    parent(Spouse1, Spouse2),
-    write('INVALID MARRIAGE : e- c').
+    father(Spouse1, Spouse2),
+    writeln('INVALID MARRIAGE : BABA - COCUK').
+prohibited_relationship(Spouse1, Spouse2) :-
+    mother(Spouse1, Spouse2),
+    writeln('INVALID MARRIAGE : ANNE - COCUK').
 prohibited_relationship(Spouse1, Spouse2) :-
     uncle(Spouse2, Spouse1),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    writeln('INVALID MARRIAGE : AMCA - YEGEN').
 prohibited_relationship(Spouse1, Spouse2) :-
     aunt(Spouse2, Spouse1),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    writeln('INVALID MARRIAGE : AMCA - YEGEN').
 prohibited_relationship(Spouse1, Spouse2) :-
-    parent(Spouse2, Spouse1),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    father(Spouse2, Spouse1),
+    writeln('INVALID MARRIAGE : BABA - YEGEN').
+prohibited_relationship(Spouse1, Spouse2) :-
+    mother(Spouse1, Spouse2),
+    writeln('INVALID MARRIAGE : ANNE - COCUK').
 prohibited_relationship(Spouse1, Spouse2) :-
     dayi(Spouse1, Spouse2),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    writeln('INVALID MARRIAGE : AMCA - YEGEN').
 prohibited_relationship(Spouse1, Spouse2) :-
     dayi(Spouse2, Spouse1),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    writeln('INVALID MARRIAGE : AMCA - YEGEN').
 prohibited_relationship(Spouse1, Spouse2) :-
     hala(Spouse1, Spouse2),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    writeln('INVALID MARRIAGE : AMCA - YEGEN').
 prohibited_relationship(Spouse1, Spouse2) :-
     hala(Spouse2, Spouse1),
-    write('INVALID MARRIAGE : AMCA - YEGEN').
+    writeln('INVALID MARRIAGE : AMCA - YEGEN').
 
 
 
 
 % Start the program
 :- initialization(menu).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
