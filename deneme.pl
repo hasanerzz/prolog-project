@@ -218,6 +218,15 @@ add_update_person :-
     ; Response == 2 -> update_person
     ; writeln('Invalid option, returning to menu.')
     ).
+
+% Check if the parent is married
+is_married(Parent) :-
+    married(Parent, _).
+
+% Check if the parent is at least 18 years old at the time of the child's birth
+is_of_age(Parent, ChildBirthYear) :-
+    birth_year(Parent, ParentBirthYear),
+    ChildBirthYear - ParentBirthYear >= 18.
 % Check if the parent is alive at the time of the child's birth
 is_alive(Parent, ChildBirthYear) :-
     (death_year(Parent, DeathYear) -> ChildBirthYear =< DeathYear ; true).
