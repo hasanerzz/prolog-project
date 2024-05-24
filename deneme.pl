@@ -1,12 +1,12 @@
 :- dynamic male/1, female/1, parent/2, married/2, birth_year/2, death_year/2.
 
 % Define initial male and female members
-male('Murat Aslan').
-female('Sedanur Aslan').
+male('m').
+female('s').
 
 
 % Define initial marriage relationships
-married('Murat Aslan', 'Sedanur Aslan').
+married('m', 's').
 
 % Adding a new person
 add_person(Name, male) :-
@@ -29,8 +29,8 @@ update_gender(Name, female) :-
 % Printing the family tree
 print_family_tree :-
     writeln('---LEVEL 0---'),
-    print_individual_with_spouse('Murat Aslan'),
-    find_children(['Murat Aslan', 'Sedanur Aslan'], Level1Members),
+    print_individual_with_spouse('m'),
+    find_children(['m', 's'], Level1Members),
     print_next_levels(Level1Members, 1).
 
 find_children(Parents, Children) :-
