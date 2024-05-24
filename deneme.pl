@@ -69,31 +69,44 @@ print_person_info(Name) :-
     (male(Name) -> Gender = 'Male' ; female(Name) -> Gender = 'Female' ; Gender = 'Unknown'),
     format('Name: ~w, Gender: ~w~n', [Name, Gender]),
     findall(Child, parent(Name, Child), Children),
-    format('Children: ~w~n', [Children]),
+    (Children == [] -> ChildrenList = 'None' ; ChildrenList = Children),
+    format('Children: ~w~n', [ChildrenList]),
     findall(Parent, parent(Parent, Name), Parents),
-    format('Parents: ~w~n', [Parents]),
-    (married(Name, Spouse) -> format('Spouse: ~w~n', [Spouse]) ; true),
+    (Parents == [] -> ParentsList = 'None' ; ParentsList = Parents),
+    format('Parents: ~w~n', [ParentsList]),
+    (married(Name, Spouse) -> format('Spouse: ~w~n', [Spouse]) ; format('Spouse: None~n')),
     (   death_year(Name, DeathYear) ->
-        (   birth_year(Name, BirthYear) ->
-            Age is DeathYear - BirthYear,
-            format('Status: Dead~n'),
-            format('Birth Year: ~w~n', [BirthYear]),
-            format('Death Year: ~w~n', [DeathYear]),
-            format('Age at Death: ~w years~n', [Age])
+        (   DeathYear \= none ->
+            (   birth_year(Name, BirthYear) ->
+                Age is DeathYear - BirthYear,
+                format('Status: Dead~n'),
+                format('Birth Year: ~w~n', [BirthYear]),
+                format('Death Year: ~w~n', [DeathYear]),
+                format('Age at Death: ~w years~n', [Age])
+            ;   format('Status: Dead~n'),
+                format('Death Year: ~w~n', [DeathYear]),
+                writeln('Birth Year: Unknown, unable to calculate age')
+            )
         ;   format('Status: Dead~n'),
-            format('Death Year: ~w~n', [DeathYear]),
-            writeln('Birth Year: Unknown, unable to calculate age')
+            writeln('Death Year: Unknown'),
+            (   birth_year(Name, BirthYear) ->
+                writeln('Death Year is unknown, unable to calculate age')
+            ;   writeln('Birth Year: Unknown')
+            )
         )
     ;   (   birth_year(Name, BirthYear) ->
             current_year(CurrentYear),
             Age is CurrentYear - BirthYear,
             format('Status: Alive~n'),
             format('Birth Year: ~w~n', [BirthYear]),
-            format('Age: ~w~n', [Age])
+            format('Age: ~w years~n', [Age])
         ;   format('Status: Alive~n'),
             writeln('Birth Year: Unknown')
         )
     ).
+
+
+
 
 
 
@@ -205,7 +218,21 @@ add_update_person :-
     ; Response == 2 -> update_person
     ; writeln('Invalid option, returning to menu.')
     ).
+% Check if the parent is alive at the time of the child's birth
+is_alive(Parent, ChildBirthYear) :-
+    (death_year(Parent, DeathYear) -> ChildBirthYear =< DeathYear ; true).
 
+% Validate parenthood
+valid_parenthood(Parent, ChildBirthYear) :-
+    is_married(Parent),
+    is_of_age(Parent, ChildBirthYear),
+    is_alive(Parent, ChildBirthYear).
+
+% Assert parenthood only if valid
+assert_valid_parent(Parent, Child, ChildBirthYear) :-
+    valid_parenthood(Parent, ChildBirthYear) ->
+        assertz(parent(Parent, Child));
+        writeln('Invalid parenthood: Check marriage status, age, and life status of the parent.').
 
 add_person_prompt :-
     writeln('Please type the father\'s name:'),
@@ -227,9 +254,10 @@ add_person_prompt :-
     assert_parent(FatherName, ChildName),
     assert_parent(MotherName, ChildName),
     assert_birth_year(ChildName, BirthYear),
-    assert_death_year(ChildName, DeathYear),
+    (DeathYear \= none -> assert_death_year(ChildName, DeathYear) ; true),  % Check if death year is provided
     writeln('Person added successfully.'),
     print_family_tree.
+
 
 update_person :-
     writeln('Please type the name of the person to update:'),
@@ -253,12 +281,13 @@ update_birth_year(Name) :-
     writeln('Birth year updated successfully.'),
     print_person_info(Name).
 
+
 update_death_year(Name) :-
     writeln('Please type the new death year (if deceased, else type "none"):'),
     read(DeathYearInput),
     parse_death_year(DeathYearInput, NewDeathYear),
     retractall(death_year(Name, _)),
-    (NewDeathYear == none -> true ; assertz(death_year(Name, NewDeathYear))),
+    (NewDeathYear \= none -> assertz(death_year(Name, NewDeathYear)) ; true),
     writeln('Death year updated successfully.'),
     print_person_info(Name).
 
@@ -268,6 +297,7 @@ update_death_year(Name) :-
 
 parse_death_year('none', none) :- !.
 parse_death_year(Year, Year).
+
 
 assert_person(Name, Gender) :-
     (   Gender == male ->
@@ -352,8 +382,6 @@ prohibited_relationship(Spouse1, Spouse2) :-
 
 % Start the program
 :- initialization(menu).
-
-
 
 
 
