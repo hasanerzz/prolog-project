@@ -4,9 +4,11 @@
 male('m').
 female('s').
 
-
+birth_year('m', 1940).
+birth_year('s', 1942).
 % Define initial marriage relationships
 married('m', 's').
+married('s', 'm').
 
 % Adding a new person
 add_person(Name, male) :-
