@@ -1,12 +1,12 @@
 :- dynamic male/1, female/1, parent/2, married/2, birth_year/2, death_year/2.
 
 % Define initial male and female members
-male('Murat Aslan').
-female('Sedanur Aslan').
+male('m').
+female('s').
 
 
 % Define initial marriage relationships
-married('Murat Aslan', 'Sedanur Aslan').
+married('m', 's').
 
 % Adding a new person
 add_person(Name, male) :-
@@ -29,8 +29,8 @@ update_gender(Name, female) :-
 % Printing the family tree
 print_family_tree :-
     writeln('---LEVEL 0---'),
-    print_individual_with_spouse('Murat Aslan'),
-    find_children(['Murat Aslan', 'Sedanur Aslan'], Level1Members),
+    print_individual_with_spouse('m'),
+    find_children(['m', 's'], Level1Members),
     print_next_levels(Level1Members, 1).
 
 find_children(Parents, Children) :-
@@ -65,6 +65,29 @@ calculate_age(Name, Age) :-
     ;   current_year(CurrentYear), Age is CurrentYear - BirthYear).
 
 
+% Base case: If a person has no parents, they are at level 0.
+find_level(Name, 0) :-
+    \+ parent(_, Name), !.
+
+% Recursive case: If a person has parents, calculate the highest level among all parents.
+find_level(Name, Level) :-
+    findall(ParentLevel, (parent(Parent, Name), find_level(Parent, ParentLevel)), ParentLevels),
+    max_list(ParentLevels, MaxParentLevel),
+    Level is MaxParentLevel + 1.
+
+% Auxiliary predicate to find the maximum in a list.
+max_list([H|T], Max) :-
+    max_list(T, H, Max).
+
+max_list([], Max, Max).
+max_list([H|T], Acc, Max) :-
+    H > Acc,
+    max_list(T, H, Max).
+max_list([H|T], Acc, Max) :-
+    H =< Acc,
+    max_list(T, Acc, Max).
+
+% Print person info including the level in the family tree.
 print_person_info(Name) :-
     (male(Name) -> Gender = 'Male' ; female(Name) -> Gender = 'Female' ; Gender = 'Unknown'),
     format('Name: ~w, Gender: ~w~n', [Name, Gender]),
@@ -103,11 +126,10 @@ print_person_info(Name) :-
         ;   format('Status: Alive~n'),
             writeln('Birth Year: Unknown')
         )
-    ).
-
-
-
-
+    ),
+    % Calculate and print the level in the family tree.
+    find_level(Name, Level),
+    format('Level in family tree: ~w~n', [Level]).
 
 
 
@@ -219,6 +241,29 @@ add_update_person :-
     ; writeln('Invalid option, returning to menu.')
     ).
 
+% Check if the parent is married
+is_married(Parent) :-
+    married(Parent, _).
+
+% Check if the parent is at least 18 years old at the time of the child's birth
+is_of_age(Parent, ChildBirthYear) :-
+    birth_year(Parent, ParentBirthYear),
+    ChildBirthYear - ParentBirthYear >= 18.
+% Check if the parent is alive at the time of the child's birth
+is_alive(Parent, ChildBirthYear) :-
+    (death_year(Parent, DeathYear) -> ChildBirthYear =< DeathYear ; true).
+
+% Validate parenthood
+valid_parenthood(Parent, ChildBirthYear) :-
+    is_married(Parent),
+    is_of_age(Parent, ChildBirthYear),
+    is_alive(Parent, ChildBirthYear).
+
+% Assert parenthood only if valid
+assert_valid_parent(Parent, Child, ChildBirthYear) :-
+    valid_parenthood(Parent, ChildBirthYear) ->
+        assertz(parent(Parent, Child));
+        writeln('Invalid parenthood: Check marriage status, age, and life status of the parent.').
 
 add_person_prompt :-
     writeln('Please type the father\'s name:'),
@@ -267,16 +312,15 @@ update_birth_year(Name) :-
     writeln('Birth year updated successfully.'),
     print_person_info(Name).
 
+
 update_death_year(Name) :-
     writeln('Please type the new death year (if deceased, else type "none"):'),
     read(DeathYearInput),
     parse_death_year(DeathYearInput, NewDeathYear),
     retractall(death_year(Name, _)),
-    (NewDeathYear \= none -> assertz(death_year(Name, NewDeathYear) ; true),
+    (NewDeathYear \= none -> assertz(death_year(Name, NewDeathYear)) ; true),
     writeln('Death year updated successfully.'),
     print_person_info(Name).
-
-
 
 
 
@@ -369,8 +413,6 @@ prohibited_relationship(Spouse1, Spouse2) :-
 
 % Start the program
 :- initialization(menu).
-
-
 
 
 
