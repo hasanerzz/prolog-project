@@ -122,14 +122,14 @@ print_person_info(Name) :-
             Age is CurrentYear - BirthYear,
             format('Status: Alive~n'),
             format('Birth Year: ~w~n', [BirthYear]),
-            format('Age: ~w years~n', [Age])
+            format('Age: ~w~n', [Age])
         ;   format('Status: Alive~n'),
             writeln('Birth Year: Unknown')
         )
     ),
     % Calculate and print the level in the family tree.
     find_level(Name, Level),
-    format('Level in family tree: ~w~n', [Level]).
+    format('Level: ~w~n', [Level]).
 
 
 
