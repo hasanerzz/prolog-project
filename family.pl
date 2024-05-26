@@ -1,17 +1,16 @@
 :- dynamic male/1, female/1, parent/2, married/2, birth_year/2, death_year/2.
 :- discontiguous sibling/2.
-:- discontiguous yenge/2.
 
 % Define initial male and female members
-male('m').
-female('s').
+male('Murat Aslan').
+female('Sedanur Aslan').
 
-birth_year('m', 1940).
-birth_year('s', 1942).
+birth_year('Murat Aslan', 1940).
+birth_year('Sedanur Aslan', 1942).
 
 % Define initial marriage relationships
-married('m', 's').
-married('s', 'm').
+married('Murat Aslan', 'Sedanur Aslan').
+married('Sedanur Aslan', 'Murat Aslan').
 
 % Adding a new person
 add_person(Name, male) :-
@@ -26,8 +25,8 @@ add_person(Name, female) :-
 % Printing the family tree
 print_family_tree :-
     writeln('---LEVEL 0---'),
-    print_individual_with_spouse('m'),
-    find_children(['m', 's'], Level1Members),
+    print_individual_with_spouse('Murat Aslan'),
+    find_children(['Murat Aslan', 'Sedanur Aslan'], Level1Members),
     print_next_levels(Level1Members, 1).
 
 find_children(Parents, Children) :-
@@ -149,7 +148,6 @@ find_relationship(X, Y, Relationship) :-
         Relationship = 'Kiz Kardes'
     ),
     !.
-
 find_relationship(X, Y, 'Amca') :- amca(X, Y).
 find_relationship(X, Y, 'Dayi') :- dayi(X, Y).
 find_relationship(X, Y, 'Teyze') :- teyze(X, Y).
@@ -173,17 +171,11 @@ find_relationship(X, Y, 'Es') :- married(X, Y).
 % Additional relationships
 father(F, C) :- male(F), parent(F, C).
 mother(M, C) :- female(M), parent(M, C).
-ogul(O, P) :- male(O), parent(P, O).
+ogul(O, P) :- male(O), parent(P,O).
 kiz(K, P) :- female(K), parent(P, K).
-
-gelin(G, P) :- female(G), ogul(O, P), married(G, O).
-damat(D, P) :- male(D), kiz(K, P), married(D, K).
-
-sibling(X, Y) :-
-    parent(Z, X),
-    parent(Z, Y),
-    X \= Y.
-
+gelin(G, K) :- female(G), ogul(O, K), married(G, O).
+damat(G, K) :- male(G), kiz(O, K), married(G, O).
+sibling(X, Y) :- parent(Z, X), parent(Z, Y), X \= Y.
 erkekKardes(K, B) :- male(K), sibling(K, B).
 kizKardes(K, B) :- female(K), sibling(K, B).
 abi(B, K) :- 
@@ -199,46 +191,26 @@ abla(A, K) :-
     calculate_age(A, AgeA), 
     calculate_age(K, AgeK), 
     AgeA > AgeK.
-
-
-amca(U, N) :- male(U), sibling(U, P), male(P), parent(P, N).
-dayi(D, N) :- male(D), sibling(D, M), female(M), parent(M, N).
-teyze(T, N) :- female(T), sibling(T, M), female(M), parent(M, N).
-hala(H, N) :- female(H), sibling(H, P), male(P), parent(P, N).
+amca(U, N) :- male(U), sibling(U, P),male(P), parent(P, N).
+dayi(D,Y) :-  male(D), sibling(D, P), female(P), parent(P,Y).
+teyze(A, N) :- female(A), sibling(A, P), female(P),parent(P, N).
+hala(H, Y) :- female(H), sibling(H,P), male(P), parent(P,Y).
 cousin(X, Y) :- parent(P1, X), parent(P2, Y), sibling(P1, P2).
-
-baldiz(B, H) :- female(B), male(H), married(H, W), sibling(B, W).
-görümce(B, H) :- female(B), female(H), married(H, W), sibling(B, W).
-kayinbirader(K, H) :- male(K), married(H, W), sibling(K, W).
-elti(E, W) :- female(E), married(H, W), married(E, X), sibling(X, H).
-bacanak(B, W) :- male(B), married(H, W), married(B, X), sibling(W, X).
-eniste(E, S) :-
-    male(E), 
-    married(E, W), 
-    (   (sibling(S, W); teyze(S, W); hala(S, W)) ->
-        true
-    ;   (sibling(S, SW); teyze(S, SW); hala(S, SW)), 
-        married(SW, E)
-    ).
-yenge(E, S) :-
-    female(E), 
-    married(E, W), 
-    (   (sibling(S, W); amca(S, W); dayi(S, W)) ->
-        true
-    ;   (sibling(S, SW); amca(S, SW); dayi(S, SW)), 
-        married(SW, E)
-    ).
-
-kayinpeder(K, E) :- (gelin(E, K); damat(E, K)), male(K).
-kayinvalide(K, E) :- (gelin(E, K); damat(E, K)), female(K).
-
-yegen(Y, S) :- (amca(S, Y); dayi(S, Y); hala(S, Y); teyze(S, Y)).
-yenge(Y, S) :- female(Y), married(Y, A), sibling(A, S).
-
+baldiz(S,H) :- male(H),married(H,W), female(S), sibling(S,W).
+kayinbirader(B,H) :- male(B), male(H), married(H,W), sibling(W,B).
+elti(S,W) :- female(S), female(W), married(H,W), married(S,X),
+    sibling(X,H).
+bacanak(S,W) :- male(S), male(W), married(H,W), married(S,X),
+    sibling(X,H).
+eniste(E, H):- male(E), male(H), sibling(H,S), female(S), married(E,S).
+kayinpeder(K, E) :- gelin(E, K); damat(E, K), male(K).
+kayinvalide(K, E) :- gelin(E, K); damat(E, K), female(K).
+yegen(Y, S) :- amca(S, Y); dayi(S, Y); hala(S, Y); teyze(S, Y).
+yenge(Y, S) :- female(Y),(married(Y, A), abi(A, S)),
+    (married(Y, A), amca(A, S)), (married(Y, A), dayi(A, S)).
 grandparent(GP, GC) :- parent(GP, P), parent(P, GC).
 grandchild(GC, GP) :- grandparent(GP, GC).
-
-
+sibling(X, Y) :- parent(Z, X), parent(Z, Y), X \= Y.
 
 
 % Adding a marriage
