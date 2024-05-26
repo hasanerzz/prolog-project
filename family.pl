@@ -164,8 +164,9 @@ find_relationship(X, Y, 'Gelin') :- gelin(X, Y).
 find_relationship(X, Y, 'Damat') :- damat(X, Y).
 find_relationship(X, Y, 'Kayinpeder') :- kayinpeder(X, Y).
 find_relationship(X, Y, 'Kayinvalide') :- kayinvalide(X, Y).
-find_relationship(X, Y, 'Grandparent') :- grandparent(X, Y).
-find_relationship(X, Y, 'Grandchild') :- grandchild(X, Y).
+find_relationship(X, Y, 'Buyukanne') :- buyukanne(X, Y).
+find_relationship(X, Y, 'Buyukbaba') :- buyukbaba(X, Y).
+find_relationship(X, Y, 'Torun') :- grandchild(X, Y).
 find_relationship(X, Y, 'Es') :- married(X, Y).
 
 % Additional relationships
@@ -209,6 +210,8 @@ yegen(Y, S) :- amca(S, Y); dayi(S, Y); hala(S, Y); teyze(S, Y).
 yenge(Y, S) :- female(Y),(married(Y, A), abi(A, S)),
     (married(Y, A), amca(A, S)), (married(Y, A), dayi(A, S)).
 grandparent(GP, GC) :- parent(GP, P), parent(P, GC).
+buyukbaba(GP, GC) :- male(GP), grandparent(GP, GC).
+buyukanne(GP, GC) :- female(GP), grandparent(GP, GC).
 grandchild(GC, GP) :- grandparent(GP, GC).
 sibling(X, Y) :- parent(Z, X), parent(Z, Y), X \= Y.
 
@@ -295,7 +298,7 @@ add_person_prompt :-
     read(Gender),
     writeln('Please type the child\'s birth year:'),
     read(BirthYear),
-    writeln('Please type the child\'s death year (if deceased, else type "none"):'),
+    writeln('Please type the child\'s death year (if this person is alive, type "none"):'),
     read(DeathYearInput),
     parse_death_year(DeathYearInput, DeathYear),
     assert_person(FatherName, male),
